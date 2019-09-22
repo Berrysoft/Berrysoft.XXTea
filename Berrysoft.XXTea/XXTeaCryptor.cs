@@ -1,26 +1,36 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Berrysoft.XXTea
 {
+    /// <summary>
+    /// Represents a cryptor with XXTEA algorithm.
+    /// </summary>
     public sealed class XXTeaCryptor : TeaCryptorBase
     {
+        /// <inhertidoc/>
         public XXTeaCryptor() : base() { }
+        /// <inhertidoc/>
         public XXTeaCryptor(byte[] key) : base(key) { }
+        /// <inhertidoc/>
         public XXTeaCryptor(string key) : base(key) { }
+        /// <inhertidoc/>
         public XXTeaCryptor(string key, Encoding encoding) : base(key, encoding) { }
 
+        /// <inhertidoc/>
         protected override byte[] FixData(byte[] data) => data;
 
+        /// <inhertidoc/>
         protected override byte[] RestoreData(byte[] data) => data;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint MX(uint sum, uint y, uint z, int p, uint e, uint[] k)
+        private static uint MX(uint sum, uint y, uint z, int p, uint e, ImmutableArray<uint> k)
         {
             return ((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4) ^ (sum ^ y)) + (k[(p & 3) ^ (int)e] ^ z);
         }
 
-        private static uint[] EncryptInternal(uint[] v, uint[] k)
+        private static uint[] EncryptInternal(uint[] v, ImmutableArray<uint> k)
         {
             int n = v.Length - 1;
             uint z = v[n];
@@ -43,7 +53,7 @@ namespace Berrysoft.XXTea
             return v;
         }
 
-        private static uint[] DecryptInternal(uint[] v, uint[] k)
+        private static uint[] DecryptInternal(uint[] v, ImmutableArray<uint> k)
         {
             int n = v.Length - 1;
             int q = 6 + 52 / (n + 1);
@@ -66,8 +76,10 @@ namespace Berrysoft.XXTea
             return v;
         }
 
-        protected override uint[] Encrypt(uint[] data) => EncryptInternal(data, uintKey);
+        /// <inhertidoc/>
+        protected override uint[] Encrypt(uint[] data) => EncryptInternal(data, UintKey);
 
-        protected override uint[] Decrypt(uint[] data) => DecryptInternal(data, uintKey);
+        /// <inhertidoc/>
+        protected override uint[] Decrypt(uint[] data) => DecryptInternal(data, UintKey);
     }
 }
