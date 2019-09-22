@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29311.281
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berrysoft.XXTea", "Berrysoft.XXTea\Berrysoft.XXTea.csproj", "{9F5115B3-F6EB-4B95-8028-669D79DF4217}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berrysoft.XXTea.Test", "Berrysoft.XXTea.Test\Berrysoft.XXTea.Test.csproj", "{66586263-B882-495B-80CE-77438F3461CE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9F5115B3-F6EB-4B95-8028-669D79DF4217}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F5115B3-F6EB-4B95-8028-669D79DF4217}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F5115B3-F6EB-4B95-8028-669D79DF4217}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F5115B3-F6EB-4B95-8028-669D79DF4217}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66586263-B882-495B-80CE-77438F3461CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66586263-B882-495B-80CE-77438F3461CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66586263-B882-495B-80CE-77438F3461CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66586263-B882-495B-80CE-77438F3461CE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7A611408-D2A0-4B94-829E-EE1C8258267A}
+	EndGlobalSection
+EndGlobal
