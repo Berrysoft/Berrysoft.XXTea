@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -19,10 +20,7 @@ namespace Berrysoft.XXTea
         public XXTeaCryptor(string key, Encoding encoding) : base(key, encoding) { }
 
         /// <inhertidoc/>
-        protected override byte[] FixData(byte[] data) => data;
-
-        /// <inhertidoc/>
-        protected override byte[] RestoreData(byte[] data) => data;
+        protected override int GetFixedDataLength(int length) => ((length + 3) / 4 + 1) * 4;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint MX(uint sum, uint y, uint z, int p, uint e, ImmutableArray<uint> k)
@@ -30,7 +28,7 @@ namespace Berrysoft.XXTea
             return ((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4) ^ (sum ^ y)) + (k[(p & 3) ^ (int)e] ^ z);
         }
 
-        private static uint[] EncryptInternal(uint[] v, ImmutableArray<uint> k)
+        private static void EncryptInternal(Span<uint> v, ImmutableArray<uint> k)
         {
             int n = v.Length - 1;
             uint z = v[n];
@@ -50,10 +48,9 @@ namespace Berrysoft.XXTea
                     }
                 }
             }
-            return v;
         }
 
-        private static uint[] DecryptInternal(uint[] v, ImmutableArray<uint> k)
+        private static void DecryptInternal(Span<uint> v, ImmutableArray<uint> k)
         {
             int n = v.Length - 1;
             int q = 6 + 52 / (n + 1);
@@ -73,13 +70,12 @@ namespace Berrysoft.XXTea
                     sum -= Delta;
                 } while (--q > 0);
             }
-            return v;
         }
 
         /// <inhertidoc/>
-        protected override uint[] Encrypt(uint[] data) => EncryptInternal(data, UintKey);
+        protected override void Encrypt(Span<uint> data) => EncryptInternal(data, UInt32Key);
 
         /// <inhertidoc/>
-        protected override uint[] Decrypt(uint[] data) => DecryptInternal(data, UintKey);
+        protected override void Decrypt(Span<uint> data) => DecryptInternal(data, UInt32Key);
     }
 }

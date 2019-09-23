@@ -20,21 +20,18 @@ namespace Berrysoft.XXTea
         /// <summary>
         /// The 128-bit key.
         /// </summary>
-        public ImmutableArray<uint> UintKey { get; private set; } = EmptyKey;
+        public ImmutableArray<uint> UInt32Key { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of cryptor.
         /// </summary>
-        protected TeaCryptorBase() { }
+        protected TeaCryptorBase() : this(Array.Empty<byte>()) { }
 
         /// <summary>
         /// Initializes a new instance of cryptor with key.
         /// </summary>
         /// <param name="key">The key.</param>
-        protected TeaCryptorBase(byte[] key)
-        {
-            if (key.Length != 0) ConsumeKey(key);
-        }
+        protected TeaCryptorBase(byte[] key) => ConsumeKey(key);
 
         /// <summary>
         /// Initializes a new instance of cryptor with key string.
@@ -53,7 +50,19 @@ namespace Berrysoft.XXTea
         /// Change the key to another one.
         /// </summary>
         /// <param name="key">The key.</param>
-        public void ConsumeKey(byte[] key) => UintKey = ImmutableArray.Create(ToUInt32Array(FixKey(key), false));
+        public void ConsumeKey(byte[] key)
+        {
+            if (key.Length == 0)
+            {
+                UInt32Key = EmptyKey;
+            }
+            else
+            {
+                uint[] uintKey = new uint[4];
+                Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref uintKey[0]), ref key[0], (uint)Math.Min(key.Length, 16));
+                UInt32Key = ImmutableArray.Create(uintKey);
+            }
+        }
 
         /// <summary>
         /// Change the key to another one.
@@ -69,24 +78,19 @@ namespace Berrysoft.XXTea
         public void ConsumeKey(string key, Encoding encoding) => ConsumeKey(encoding.GetBytes(key));
 
         /// <summary>
-        /// Fixes the key to at least 16B.
+        /// Get the fixed data length.
         /// </summary>
-        /// <param name="key">The original key.</param>
-        /// <returns>The fixed key.</returns>
-        protected virtual byte[] FixKey(byte[] key)
+        /// <param name="length">The original data length.</param>
+        /// <returns>The fixed data length.</returns>
+        protected virtual int GetFixedDataLength(int length)
         {
-            if (key.Length == 16)
+            if (length % 8 == 4)
             {
-                return key;
+                return length + 4;
             }
             else
             {
-                byte[] fixedKey = new byte[16];
-                if (key.Length > 0)
-                {
-                    Unsafe.CopyBlock(ref fixedKey[0], ref key[0], (uint)Math.Min(key.Length, 16));
-                }
-                return fixedKey;
+                return ((length + 4) / 8 + 1) * 8;
             }
         }
 
@@ -95,48 +99,15 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="data">The original data.</param>
         /// <returns>The fixed data.</returns>
-        protected virtual byte[] FixData(byte[] data)
+        protected byte[] FixData(ReadOnlySpan<byte> data)
         {
-            if ((data.Length + 4) % 8 == 0)
+            int length = GetFixedDataLength(data.Length);
+            byte[] fixedData = new byte[length];
+            if (data.Length > 0)
             {
-                return data;
+                Unsafe.CopyBlock(ref fixedData[0], ref Unsafe.AsRef(in data[0]), (uint)Math.Min(length, data.Length));
             }
-            else
-            {
-                int length = ((data.Length + 4) / 8 + 1) * 8 - 4;
-                byte[] fixedData = new byte[length];
-                if (data.Length > 0)
-                {
-                    Unsafe.CopyBlock(ref fixedData[0], ref data[0], (uint)data.Length);
-                }
-                return fixedData;
-            }
-        }
-
-        /// <summary>
-        /// Removes the padding zero at the end of the fixed data.
-        /// </summary>
-        /// <param name="data">The fixed data.</param>
-        /// <returns>The original data.</returns>
-        protected virtual byte[] RestoreData(byte[] data)
-        {
-            int i = data.Length - 1;
-            for (; i >= 0; i--)
-            {
-                if (data[i] != 0)
-                {
-                    break;
-                }
-            }
-            if (i == -1)
-            {
-                return Array.Empty<byte>();
-            }
-            else
-            {
-                Array.Resize(ref data, i + 1);
-                return data;
-            }
+            return fixedData;
         }
 
         /// <summary>
@@ -144,21 +115,36 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="data">The fixed data.</param>
         /// <returns>The encrypted data.</returns>
-        protected abstract uint[] Encrypt(uint[] data);
+        protected abstract void Encrypt(Span<uint> data);
 
         /// <summary>
         /// Decrypts the data.
         /// </summary>
         /// <param name="data">The encrypted data.</param>
         /// <returns>The fixed data.</returns>
-        protected abstract uint[] Decrypt(uint[] data);
+        protected abstract void Decrypt(Span<uint> data);
+
+        private unsafe void EncryptInternal(byte[] fixedData, int originalLength)
+        {
+            fixed (byte* pfData = fixedData)
+            {
+                Span<uint> uintData = new Span<uint>(pfData, fixedData.Length / 4);
+                AddLength(uintData, originalLength);
+                Encrypt(uintData);
+            }
+        }
 
         /// <summary>
         /// Encrypts the data.
         /// </summary>
         /// <param name="data">The fixed data.</param>
         /// <returns>The encrypted data.</returns>
-        public byte[] Encrypt(byte[] data) => ToByteArray(Encrypt(ToUInt32Array(FixData(data), true)), false);
+        public unsafe byte[] Encrypt(byte[] data)
+        {
+            byte[] fixedData = FixData(data);
+            EncryptInternal(fixedData, data.Length);
+            return fixedData;
+        }
 
         /// <summary>
         /// Encrypts the string.
@@ -173,14 +159,46 @@ namespace Berrysoft.XXTea
         /// <param name="data">The data string.</param>
         /// <param name="encoding">The specified encoding.</param>
         /// <returns>The encrypted data.</returns>
-        public byte[] EncryptString(string data, Encoding encoding) => Encrypt(encoding.GetBytes(data));
+        public byte[] EncryptString(string data, Encoding encoding)
+        {
+            byte[] fixedData = new byte[GetFixedDataLength(encoding.GetByteCount(data))];
+            int originalLength = encoding.GetBytes(data, 0, data.Length, fixedData, 0);
+            EncryptInternal(fixedData, originalLength);
+            return fixedData;
+        }
+
+        private unsafe int DecryptInternal(byte[] fixedData)
+        {
+            fixed (byte* pfData = fixedData)
+            {
+                Span<uint> uintData = new Span<uint>(pfData, fixedData.Length / 4);
+                Decrypt(uintData);
+                return GetLength(uintData);
+            }
+        }
 
         /// <summary>
         /// Decrypts the data.
         /// </summary>
         /// <param name="data">The encrypted data.</param>
         /// <returns>The fixed data.</returns>
-        public byte[] Decrypt(byte[] data) => RestoreData(ToByteArray(Decrypt(ToUInt32Array(data, false)), true));
+        public byte[] Decrypt(byte[] data)
+        {
+            if (data.Length % 4 != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(data));
+            }
+            byte[] fixedData = (byte[])data.Clone();
+            int originalLength = DecryptInternal(fixedData);
+            if (originalLength == 0)
+            {
+                return Array.Empty<byte>();
+            }
+            else
+            {
+                return fixedData.AsSpan().Slice(0, originalLength).ToArray();
+            }
+        }
 
         /// <summary>
         /// Decrypts the data to string.
@@ -197,59 +215,22 @@ namespace Berrysoft.XXTea
         /// <returns>The data string.</returns>
         public string DecryptString(byte[] data, Encoding encoding) => encoding.GetString(Decrypt(data));
 
-        /// <summary>
-        /// Converts data to <see cref="uint"/> array.
-        /// </summary>
-        /// <param name="data">The original data.</param>
-        /// <param name="includeLength">Whether the end of the array contains the length of the data.</param>
-        /// <returns>The converted data.</returns>
-        protected static uint[] ToUInt32Array(byte[] data, bool includeLength)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void AddLength(Span<uint> data, int originalLength)
         {
-            int length = data.Length;
-            int n = (length + 3) / 4;
-            uint[] result;
-            if (includeLength)
-            {
-                result = new uint[n + 1];
-                result[n] = (uint)length;
-            }
-            else
-            {
-                result = new uint[n];
-            }
-            if (length > 0)
-            {
-                Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref result[0]), ref data[0], (uint)length);
-            }
-            return result;
+            data[data.Length - 1] = (uint)originalLength;
         }
 
-        /// <summary>
-        /// Converts <see cref="uint"/> array to original data.
-        /// </summary>
-        /// <param name="data">The array.</param>
-        /// <param name="includeLength">Whether the array is created with length.</param>
-        /// <returns>The original data.</returns>
-        protected static byte[] ToByteArray(uint[] data, bool includeLength)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe int GetLength(Span<uint> data)
         {
-            int d = data.Length;
-            uint n = (uint)(d << 2);
-            if (includeLength)
+            int n = data.Length * 4 - 4;
+            int m = (int)data[data.Length - 1];
+            if (m < n - 3 || m > n)
             {
-                uint m = data[d - 1];
-                n -= 4;
-                if (m < n - 3 || m > n)
-                {
-                    return Array.Empty<byte>();
-                }
-                n = m;
+                m = 0;
             }
-            byte[] result = new byte[n];
-            if (n > 0)
-            {
-                Unsafe.CopyBlock(ref result[0], ref Unsafe.As<uint, byte>(ref data[0]), n);
-            }
-            return result;
+            return m;
         }
     }
 }

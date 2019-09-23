@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
 using System.Text;
 
 namespace Berrysoft.XXTea
@@ -50,23 +51,21 @@ namespace Berrysoft.XXTea
         }
 
         /// <inhertidoc/>
-        protected override uint[] Encrypt(uint[] data)
+        protected override void Encrypt(Span<uint> data)
         {
             for (int i = 0; i < data.Length; i += 2)
             {
-                EncryptInternal(ref data[i], ref data[i + 1], UintKey);
+                EncryptInternal(ref data[i], ref data[i + 1], UInt32Key);
             }
-            return data;
         }
 
         /// <inhertidoc/>
-        protected override uint[] Decrypt(uint[] data)
+        protected override void Decrypt(Span<uint> data)
         {
             for (int i = 0; i < data.Length; i += 2)
             {
-                DecryptInternal(ref data[i], ref data[i + 1], UintKey);
+                DecryptInternal(ref data[i], ref data[i + 1], UInt32Key);
             }
-            return data;
         }
     }
 }
