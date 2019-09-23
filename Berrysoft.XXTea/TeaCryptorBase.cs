@@ -82,7 +82,10 @@ namespace Berrysoft.XXTea
             else
             {
                 byte[] fixedKey = new byte[16];
-                Unsafe.CopyBlock(ref fixedKey[0], ref key[0], (uint)Math.Min(key.Length, 16));
+                if (key.Length > 0)
+                {
+                    Unsafe.CopyBlock(ref fixedKey[0], ref key[0], (uint)Math.Min(key.Length, 16));
+                }
                 return fixedKey;
             }
         }
