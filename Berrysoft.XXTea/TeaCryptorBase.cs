@@ -217,7 +217,10 @@ namespace Berrysoft.XXTea
             {
                 result = new uint[n];
             }
-            Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref result[0]), ref data[0], (uint)length);
+            if (length > 0)
+            {
+                Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref result[0]), ref data[0], (uint)length);
+            }
             return result;
         }
 
@@ -242,7 +245,10 @@ namespace Berrysoft.XXTea
                 n = m;
             }
             byte[] result = new byte[n];
-            Unsafe.CopyBlock(ref result[0], ref Unsafe.As<uint, byte>(ref data[0]), n);
+            if (n > 0)
+            {
+                Unsafe.CopyBlock(ref result[0], ref Unsafe.As<uint, byte>(ref data[0]), n);
+            }
             return result;
         }
     }

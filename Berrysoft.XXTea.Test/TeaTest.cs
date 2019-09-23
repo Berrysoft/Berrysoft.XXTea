@@ -5,35 +5,54 @@ namespace Berrysoft.XXTea.Test
     [TestClass]
     public class TeaTest
     {
-        private const string Data = "Hello world";
-        private const string Key = "abcdefghijklmn";
+        private const string Data0 = "Hello world!";
+        private const string Key0 = "abcdefghijklmnop";
+        private const string Data1 = "Hello world";
+        private const string Key1 = "abcdefghijklmn";
+        private const string Data2 = "";
+        private const string Key2 = "";
 
-        [TestMethod]
-        public void CryptTest()
+        [DataTestMethod]
+        [DataRow(Data0, Key0)]
+        [DataRow(Data1, Key1)]
+        [DataRow(Data2, Key2)]
+        public void CryptTest(string data, string key)
         {
-            TeaCryptor cryptor = new TeaCryptor(Key);
-            Assert.AreEqual(Data, cryptor.DecryptString(cryptor.EncryptString(Data)));
+            TeaCryptor cryptor = new TeaCryptor(key);
+            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data)));
         }
 
-        [TestMethod]
-        public void XCryptTest()
+        [DataTestMethod]
+        [DataRow(Data0, Key0)]
+        [DataRow(Data1, Key1)]
+        [DataRow(Data2, Key2)]
+        public void XCryptTest(string data, string key)
         {
-            XTeaCryptor cryptor = new XTeaCryptor(Key);
-            Assert.AreEqual(Data, cryptor.DecryptString(cryptor.EncryptString(Data)));
+            XTeaCryptor cryptor = new XTeaCryptor(key);
+            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data)));
         }
 
-        [TestMethod]
-        public void XRoundCryptTest()
+        [DataTestMethod]
+        [DataRow(Data0, Key0, 1024)]
+        [DataRow(Data1, Key1, 1024)]
+        [DataRow(Data2, Key2, 1024)]
+        [DataRow(Data0, Key0, 0)]
+        [DataRow(Data1, Key1, 0)]
+        [DataRow(Data2, Key2, 0)]
+        public void XRoundCryptTest(string data, string key, int round)
         {
-            XTeaCryptor cryptor = new XTeaCryptor(Key);
-            Assert.AreEqual(Data, cryptor.DecryptString(cryptor.EncryptString(Data, 1024), 1024));
+            XTeaCryptor cryptor = new XTeaCryptor(key);
+            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data, round), round));
         }
 
-        [TestMethod]
-        public void XXCryptTest()
+        [DataTestMethod]
+        [DataRow(Data0, Key0)]
+        [DataRow(Data1, Key1)]
+        [DataRow(Data2, Key2)]
+        public void XXCryptTest(string data, string key)
         {
-            XXTeaCryptor cryptor = new XXTeaCryptor(Key);
-            Assert.AreEqual(Data, cryptor.DecryptString(cryptor.EncryptString(Data)));
+            XXTeaCryptor cryptor = new XXTeaCryptor(key);
+            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data)));
         }
     }
 }
