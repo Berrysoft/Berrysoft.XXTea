@@ -105,7 +105,10 @@ namespace Berrysoft.XXTea
             {
                 int length = ((data.Length + 4) / 8 + 1) * 8 - 4;
                 byte[] fixedData = new byte[length];
-                Unsafe.CopyBlock(ref fixedData[0], ref data[0], (uint)length);
+                if (data.Length > 0)
+                {
+                    Unsafe.CopyBlock(ref fixedData[0], ref data[0], (uint)data.Length);
+                }
                 return fixedData;
             }
         }
