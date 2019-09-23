@@ -122,7 +122,7 @@ namespace Berrysoft.XXTea
             {
                 Span<uint> uintData = new Span<uint>(pfData, fixedData.Length / 4);
                 Decrypt(uintData, round);
-                return GetLength(uintData);
+                return GetOriginalDataLength(GetLength(uintData), fixedData.Length);
             }
         }
 

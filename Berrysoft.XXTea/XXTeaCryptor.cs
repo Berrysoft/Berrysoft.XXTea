@@ -22,6 +22,17 @@ namespace Berrysoft.XXTea
         /// <inhertidoc/>
         protected override int GetFixedDataLength(int length) => ((length + 3) / 4 + 1) * 4;
 
+        /// <inhertidoc/>
+        protected override int GetOriginalDataLength(int m, int n)
+        {
+            n -= 4;
+            if (m < n - 3 || m > n)
+            {
+                m = 0;
+            }
+            return m;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint MX(uint sum, uint y, uint z, int p, uint e, ImmutableArray<uint> k)
         {

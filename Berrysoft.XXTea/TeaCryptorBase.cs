@@ -95,6 +95,14 @@ namespace Berrysoft.XXTea
         }
 
         /// <summary>
+        /// Get the real original data length.
+        /// </summary>
+        /// <param name="originalLength">The original data length.</param>
+        /// <param name="fixedLength">The fixed data length.</param>
+        /// <returns>The real original data length.</returns>
+        protected virtual int GetOriginalDataLength(int originalLength, int fixedLength) => originalLength;
+
+        /// <summary>
         /// Fixes the data to odd times of 4.
         /// </summary>
         /// <param name="data">The original data.</param>
@@ -173,7 +181,7 @@ namespace Berrysoft.XXTea
             {
                 Span<uint> uintData = new Span<uint>(pfData, fixedData.Length / 4);
                 Decrypt(uintData);
-                return GetLength(uintData);
+                return GetOriginalDataLength(GetLength(uintData), fixedData.Length);
             }
         }
 
@@ -224,13 +232,7 @@ namespace Berrysoft.XXTea
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe int GetLength(Span<uint> data)
         {
-            int n = data.Length * 4 - 4;
-            int m = (int)data[data.Length - 1];
-            if (m < n - 3 || m > n)
-            {
-                m = 0;
-            }
-            return m;
+            return (int)data[data.Length - 1];
         }
     }
 }
