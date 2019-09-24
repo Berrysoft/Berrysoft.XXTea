@@ -70,7 +70,7 @@ namespace Berrysoft.XXTea
         /// <inhertidoc/>
         protected override void Decrypt(Span<uint> data) => Decrypt(data, DefaultRound);
 
-        private unsafe void EncryptInternal(byte[] fixedData, int originalLength, int round)
+        private unsafe void EncryptInternal(Span<byte> fixedData, int originalLength, int round)
         {
             fixed (byte* pfData = fixedData)
             {
@@ -81,12 +81,27 @@ namespace Berrysoft.XXTea
         }
 
         /// <summary>
+        /// Encrypts the data directly on the source.
+        /// </summary>
+        /// <param name="fixedData">The fixed data.</param>
+        /// <param name="originalLength">The original data length.</param>
+        /// <param name="round">The round of loop.</param>
+        public void EncryptSpan(Span<byte> fixedData, int originalLength, int round)
+        {
+            if (fixedData.Length < GetFixedDataLength(originalLength))
+            {
+                throw new ArgumentOutOfRangeException(nameof(fixedData));
+            }
+            EncryptInternal(fixedData, originalLength, round);
+        }
+
+        /// <summary>
         /// Encrypts the data.
         /// </summary>
         /// <param name="data">The fixed data.</param>
         /// <param name="round">The round of loop.</param>
         /// <returns>The encrypted data.</returns>
-        public byte[] Encrypt(byte[] data, int round)
+        public byte[] Encrypt(ReadOnlySpan<byte> data, int round)
         {
             byte[] fixedData = FixData(data);
             EncryptInternal(fixedData, data.Length, round);
@@ -116,7 +131,7 @@ namespace Berrysoft.XXTea
             return fixedData;
         }
 
-        private unsafe int DecryptInternal(byte[] fixedData, int round)
+        private unsafe int DecryptInternal(Span<byte> fixedData, int round)
         {
             fixed (byte* pfData = fixedData)
             {
@@ -127,18 +142,33 @@ namespace Berrysoft.XXTea
         }
 
         /// <summary>
+        /// Decrypts the data directly on the source.
+        /// </summary>
+        /// <param name="fixedData">The fixed data.</param>
+        /// <param name="round">The round of loop.</param>
+        /// <returns>The original data length.</returns>
+        public int DecryptSpan(Span<byte> fixedData, int round)
+        {
+            if (fixedData.Length % 4 != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(fixedData));
+            }
+            return DecryptInternal(fixedData, round);
+        }
+
+        /// <summary>
         /// Decrypts the data.
         /// </summary>
         /// <param name="data">The encrypted data.</param>
         /// <param name="round">The round of loop.</param>
         /// <returns>The fixed data.</returns>
-        public byte[] Decrypt(byte[] data, int round)
+        public byte[] Decrypt(ReadOnlySpan<byte> data, int round)
         {
             if (data.Length % 4 != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(data));
             }
-            byte[] fixedData = (byte[])data.Clone();
+            byte[] fixedData = data.ToArray();
             int originalLength = DecryptInternal(fixedData, round);
             if (originalLength == 0)
             {
@@ -156,7 +186,7 @@ namespace Berrysoft.XXTea
         /// <param name="data">The encrypted data.</param>
         /// <param name="round">The round of loop.</param>
         /// <returns>The UTF-8 data string.</returns>
-        public string DecryptString(byte[] data, int round) => DecryptString(data, Encoding.UTF8, round);
+        public string DecryptString(ReadOnlySpan<byte> data, int round) => DecryptString(data, Encoding.UTF8, round);
 
         /// <summary>
         /// Decrypts the data to string.
@@ -165,6 +195,22 @@ namespace Berrysoft.XXTea
         /// <param name="encoding">The specified encoding.</param>
         /// <param name="round">The round of loop.</param>
         /// <returns>The data string.</returns>
-        public string DecryptString(byte[] data, Encoding encoding, int round) => encoding.GetString(Decrypt(data, round));
+        public string DecryptString(ReadOnlySpan<byte> data, Encoding encoding, int round)
+        {
+            if (data.Length % 4 != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(data));
+            }
+            byte[] fixedData = data.ToArray();
+            int originalLength = DecryptInternal(fixedData, round);
+            if (originalLength == 0)
+            {
+                return string.Empty;
+            }
+            else
+            {
+                return encoding.GetString(fixedData, 0, originalLength);
+            }
+        }
     }
 }

@@ -20,7 +20,7 @@ namespace Berrysoft.XXTea
         public XXTeaCryptor(string key, Encoding encoding) : base(key, encoding) { }
 
         /// <inhertidoc/>
-        protected override int GetFixedDataLength(int length) => ((length + 3) / 4 + 1) * 4;
+        public override int GetFixedDataLength(int length) => ((length + 3) / 4 + 1) * 4;
 
         /// <inhertidoc/>
         protected override int GetOriginalDataLength(int m, int n)

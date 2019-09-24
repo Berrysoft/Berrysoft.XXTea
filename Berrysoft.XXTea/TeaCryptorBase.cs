@@ -31,7 +31,7 @@ namespace Berrysoft.XXTea
         /// Initializes a new instance of cryptor with key.
         /// </summary>
         /// <param name="key">The key.</param>
-        protected TeaCryptorBase(byte[] key) => ConsumeKey(key);
+        protected TeaCryptorBase(ReadOnlySpan<byte> key) => ConsumeKey(key);
 
         /// <summary>
         /// Initializes a new instance of cryptor with key string.
@@ -50,7 +50,7 @@ namespace Berrysoft.XXTea
         /// Change the key to another one.
         /// </summary>
         /// <param name="key">The key.</param>
-        public void ConsumeKey(byte[] key)
+        public void ConsumeKey(ReadOnlySpan<byte> key)
         {
             if (key.Length == 0)
             {
@@ -59,7 +59,7 @@ namespace Berrysoft.XXTea
             else
             {
                 uint[] uintKey = new uint[4];
-                Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref uintKey[0]), ref key[0], (uint)Math.Min(key.Length, 16));
+                Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref uintKey[0]), ref Unsafe.AsRef(in key[0]), (uint)Math.Min(key.Length, 16));
                 UInt32Key = ImmutableArray.Create(uintKey);
             }
         }
@@ -82,7 +82,7 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="length">The original data length.</param>
         /// <returns>The fixed data length.</returns>
-        protected virtual int GetFixedDataLength(int length)
+        public virtual int GetFixedDataLength(int length)
         {
             if (length % 8 == 4)
             {
@@ -132,7 +132,7 @@ namespace Berrysoft.XXTea
         /// <returns>The fixed data.</returns>
         protected abstract void Decrypt(Span<uint> data);
 
-        private unsafe void EncryptInternal(byte[] fixedData, int originalLength)
+        private unsafe void EncryptInternal(Span<byte> fixedData, int originalLength)
         {
             fixed (byte* pfData = fixedData)
             {
@@ -143,11 +143,25 @@ namespace Berrysoft.XXTea
         }
 
         /// <summary>
+        /// Encrypts the data directly on the source.
+        /// </summary>
+        /// <param name="fixedData">The fixed data.</param>
+        /// <param name="originalLength">The original data length.</param>
+        public void EncryptSpan(Span<byte> fixedData, int originalLength)
+        {
+            if (fixedData.Length < GetFixedDataLength(originalLength))
+            {
+                throw new ArgumentOutOfRangeException(nameof(fixedData));
+            }
+            EncryptInternal(fixedData, originalLength);
+        }
+
+        /// <summary>
         /// Encrypts the data.
         /// </summary>
         /// <param name="data">The fixed data.</param>
         /// <returns>The encrypted data.</returns>
-        public unsafe byte[] Encrypt(byte[] data)
+        public unsafe byte[] Encrypt(ReadOnlySpan<byte> data)
         {
             byte[] fixedData = FixData(data);
             EncryptInternal(fixedData, data.Length);
@@ -175,7 +189,7 @@ namespace Berrysoft.XXTea
             return fixedData;
         }
 
-        private unsafe int DecryptInternal(byte[] fixedData)
+        private unsafe int DecryptInternal(Span<byte> fixedData)
         {
             fixed (byte* pfData = fixedData)
             {
@@ -186,17 +200,31 @@ namespace Berrysoft.XXTea
         }
 
         /// <summary>
+        /// Decrypts the data directly on the source.
+        /// </summary>
+        /// <param name="fixedData">The fixed data.</param>
+        /// <returns>The original data length.</returns>
+        public int DecryptSpan(Span<byte> fixedData)
+        {
+            if (fixedData.Length % 4 != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(fixedData));
+            }
+            return DecryptInternal(fixedData);
+        }
+
+        /// <summary>
         /// Decrypts the data.
         /// </summary>
         /// <param name="data">The encrypted data.</param>
         /// <returns>The fixed data.</returns>
-        public byte[] Decrypt(byte[] data)
+        public byte[] Decrypt(ReadOnlySpan<byte> data)
         {
             if (data.Length % 4 != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(data));
             }
-            byte[] fixedData = (byte[])data.Clone();
+            byte[] fixedData = data.ToArray();
             int originalLength = DecryptInternal(fixedData);
             if (originalLength == 0)
             {
@@ -213,7 +241,7 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="data">The encrypted data.</param>
         /// <returns>The UTF-8 data string.</returns>
-        public string DecryptString(byte[] data) => DecryptString(data, Encoding.UTF8);
+        public string DecryptString(ReadOnlySpan<byte> data) => DecryptString(data, Encoding.UTF8);
 
         /// <summary>
         /// Decrypts the data to string.
@@ -221,7 +249,23 @@ namespace Berrysoft.XXTea
         /// <param name="data">The encrypted data.</param>
         /// <param name="encoding">The specified encoding.</param>
         /// <returns>The data string.</returns>
-        public string DecryptString(byte[] data, Encoding encoding) => encoding.GetString(Decrypt(data));
+        public string DecryptString(ReadOnlySpan<byte> data, Encoding encoding)
+        {
+            if (data.Length % 4 != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(data));
+            }
+            byte[] fixedData = data.ToArray();
+            int originalLength = DecryptInternal(fixedData);
+            if (originalLength == 0)
+            {
+                return string.Empty;
+            }
+            else
+            {
+                return encoding.GetString(fixedData, 0, originalLength);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void AddLength(Span<uint> data, int originalLength)
