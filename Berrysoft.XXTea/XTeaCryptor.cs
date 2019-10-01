@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Immutable;
 using System.Text;
 
 namespace Berrysoft.XXTea
@@ -20,7 +19,7 @@ namespace Berrysoft.XXTea
         /// <inhertidoc/>
         public XTeaCryptor(string key, Encoding encoding) : base(key, encoding) { }
 
-        private static void EncryptInternal(ref uint v0, ref uint v1, ImmutableArray<uint> key, int n)
+        private static void EncryptInternal(ref uint v0, ref uint v1, ReadOnlySpan<uint> key, int n)
         {
             uint sum = 0;
             unchecked
@@ -34,7 +33,7 @@ namespace Berrysoft.XXTea
             }
         }
 
-        private static void DecryptInternal(ref uint v0, ref uint v1, ImmutableArray<uint> key, int n)
+        private static void DecryptInternal(ref uint v0, ref uint v1, ReadOnlySpan<uint> key, int n)
         {
             uint sum = unchecked((uint)n * Delta);
             unchecked

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -10,17 +9,19 @@ namespace Berrysoft.XXTea
     /// </summary>
     public abstract class TeaCryptorBase
     {
-        private static readonly ImmutableArray<uint> EmptyKey = ImmutableArray.Create<uint>(0, 0, 0, 0);
+        private static readonly uint[] EmptyKey = new uint[4];
 
         /// <summary>
         /// The magic number delta.
         /// </summary>
         protected const uint Delta = 0x9E3779B9;
 
+        private uint[] uint32Key;
+
         /// <summary>
         /// The 128-bit key.
         /// </summary>
-        public ImmutableArray<uint> UInt32Key { get; private set; }
+        public ReadOnlySpan<uint> UInt32Key => uint32Key;
 
         /// <summary>
         /// Initializes a new instance of cryptor.
@@ -31,7 +32,7 @@ namespace Berrysoft.XXTea
         /// Initializes a new instance of cryptor with key.
         /// </summary>
         /// <param name="key">The key.</param>
-        protected TeaCryptorBase(ReadOnlySpan<byte> key) => ConsumeKey(key);
+        protected TeaCryptorBase(ReadOnlySpan<byte> key) => uint32Key = ConsumeKeyInternal(key);
 
         /// <summary>
         /// Initializes a new instance of cryptor with key string.
@@ -46,23 +47,25 @@ namespace Berrysoft.XXTea
         /// <param name="encoding">The specified encoding.</param>
         protected TeaCryptorBase(string key, Encoding encoding) : this(encoding.GetBytes(key)) { }
 
-        /// <summary>
-        /// Change the key to another one.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        public void ConsumeKey(ReadOnlySpan<byte> key)
+        private uint[] ConsumeKeyInternal(ReadOnlySpan<byte> key)
         {
             if (key.Length == 0)
             {
-                UInt32Key = EmptyKey;
+                return EmptyKey;
             }
             else
             {
                 uint[] uintKey = new uint[4];
                 Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref uintKey[0]), ref Unsafe.AsRef(in key[0]), (uint)Math.Min(key.Length, 16));
-                UInt32Key = ImmutableArray.Create(uintKey);
+                return uintKey;
             }
         }
+
+        /// <summary>
+        /// Change the key to another one.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        public void ConsumeKey(ReadOnlySpan<byte> key) => uint32Key = ConsumeKeyInternal(key);
 
         /// <summary>
         /// Change the key to another one.
@@ -268,15 +271,9 @@ namespace Berrysoft.XXTea
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void AddLength(Span<uint> data, int originalLength)
-        {
-            data[data.Length - 1] = (uint)originalLength;
-        }
+        internal static unsafe void AddLength(Span<uint> data, int originalLength) => data[data.Length - 1] = (uint)originalLength;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int GetLength(Span<uint> data)
-        {
-            return (int)data[data.Length - 1];
-        }
+        internal static unsafe int GetLength(Span<uint> data) => (int)data[data.Length - 1];
     }
 }

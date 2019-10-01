@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -34,12 +33,12 @@ namespace Berrysoft.XXTea
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint MX(uint sum, uint y, uint z, int p, uint e, ImmutableArray<uint> k)
+        private static uint MX(uint sum, uint y, uint z, int p, uint e, ReadOnlySpan<uint> k)
         {
             return ((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4) ^ (sum ^ y)) + (k[(p & 3) ^ (int)e] ^ z);
         }
 
-        private static void EncryptInternal(Span<uint> v, ImmutableArray<uint> k)
+        private static void EncryptInternal(Span<uint> v, ReadOnlySpan<uint> k)
         {
             int n = v.Length - 1;
             uint z = v[n];
@@ -61,7 +60,7 @@ namespace Berrysoft.XXTea
             }
         }
 
-        private static void DecryptInternal(Span<uint> v, ImmutableArray<uint> k)
+        private static void DecryptInternal(Span<uint> v, ReadOnlySpan<uint> k)
         {
             int n = v.Length - 1;
             int q = 6 + 52 / (n + 1);
