@@ -10,7 +10,8 @@ namespace Berrysoft.XXTea
     public abstract class TeaCryptorBase
     {
         private static readonly uint[] EmptyKey = new uint[4];
-        public const int DefaultRound = 32;
+
+        private const int DefaultRound = 32;
 
         /// <summary>
         /// The magic number delta.
@@ -76,6 +77,8 @@ namespace Berrysoft.XXTea
         /// Encrypts the data.
         /// </summary>
         /// <param name="data">The fixed data.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="round">The round of crypting. No effects on XXTEA.</param>
         /// <returns>The encrypted data.</returns>
         protected abstract void Encrypt(Span<uint> data, ReadOnlySpan<uint> key, int round);
 
@@ -83,6 +86,8 @@ namespace Berrysoft.XXTea
         /// Decrypts the data.
         /// </summary>
         /// <param name="data">The encrypted data.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="round">The round of crypting. No effects on XXTEA.</param>
         /// <returns>The fixed data.</returns>
         protected abstract void Decrypt(Span<uint> data, ReadOnlySpan<uint> key, int round);
 
@@ -112,6 +117,8 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="fixedData">The fixed data.</param>
         /// <param name="originalLength">The original data length.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="round">The round of crypting. No effects on XXTEA.</param>
         public void EncryptSpan(Span<byte> fixedData, int originalLength, ReadOnlySpan<byte> key, int round = DefaultRound)
         {
             if (fixedData.Length < GetFixedDataLength(originalLength))
@@ -125,6 +132,8 @@ namespace Berrysoft.XXTea
         /// Encrypts the data.
         /// </summary>
         /// <param name="data">The fixed data.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="round">The round of crypting. No effects on XXTEA.</param>
         /// <returns>The encrypted data.</returns>
         public byte[] Encrypt(ReadOnlySpan<byte> data, ReadOnlySpan<byte> key, int round = DefaultRound)
         {
@@ -137,6 +146,8 @@ namespace Berrysoft.XXTea
         /// Encrypts the string.
         /// </summary>
         /// <param name="data">The UTF-8 data string.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="round">The round of crypting. No effects on XXTEA.</param>
         /// <returns>The encrypted data.</returns>
         public byte[] EncryptString(string data, string key, int round = DefaultRound) => EncryptString(data, Encoding.UTF8, key, Encoding.UTF8, round);
 
@@ -145,6 +156,9 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="data">The data string.</param>
         /// <param name="dataEncoding">The specified encoding.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="keyEncoding">The encoding of the key.</param>
+        /// <param name="round">The round of crypting. No effects on XXTEA.</param>
         /// <returns>The encrypted data.</returns>
         public byte[] EncryptString(string data, Encoding dataEncoding, string key, Encoding keyEncoding, int round = DefaultRound)
         {
@@ -189,6 +203,8 @@ namespace Berrysoft.XXTea
         /// Decrypts the data directly on the source.
         /// </summary>
         /// <param name="fixedData">The fixed data.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="round">The round of crypting. No effects on XXTEA.</param>
         /// <returns>The original data length.</returns>
         public int DecryptSpan(Span<byte> fixedData, ReadOnlySpan<byte> key, int round = DefaultRound)
         {
@@ -203,6 +219,8 @@ namespace Berrysoft.XXTea
         /// Decrypts the data.
         /// </summary>
         /// <param name="data">The encrypted data.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="round">The round of crypting. No effects on XXTEA.</param>
         /// <returns>The fixed data.</returns>
         public byte[] Decrypt(ReadOnlySpan<byte> data, ReadOnlySpan<byte> key, int round = DefaultRound)
         {
@@ -226,6 +244,8 @@ namespace Berrysoft.XXTea
         /// Decrypts the data to string.
         /// </summary>
         /// <param name="data">The encrypted data.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="round">The round of crypting. No effects on XXTEA.</param>
         /// <returns>The UTF-8 data string.</returns>
         public string DecryptString(ReadOnlySpan<byte> data, string key, int round = DefaultRound) => DecryptString(data, Encoding.UTF8, key, Encoding.UTF8, round);
 
@@ -234,6 +254,9 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="data">The encrypted data.</param>
         /// <param name="encoding">The specified encoding.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="keyEncoding">The encoding of the key.</param>
+        /// <param name="round">The round of crypting. No effects on XXTEA.</param>
         /// <returns>The data string.</returns>
         public string DecryptString(ReadOnlySpan<byte> data, Encoding encoding, string key, Encoding keyEncoding, int round = DefaultRound)
         {
