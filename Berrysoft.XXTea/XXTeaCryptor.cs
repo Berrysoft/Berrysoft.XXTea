@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Berrysoft.XXTea
 {
@@ -9,15 +8,6 @@ namespace Berrysoft.XXTea
     /// </summary>
     public sealed class XXTeaCryptor : TeaCryptorBase
     {
-        /// <inhertidoc/>
-        public XXTeaCryptor() : base() { }
-        /// <inhertidoc/>
-        public XXTeaCryptor(byte[] key) : base(key) { }
-        /// <inhertidoc/>
-        public XXTeaCryptor(string key) : base(key) { }
-        /// <inhertidoc/>
-        public XXTeaCryptor(string key, Encoding encoding) : base(key, encoding) { }
-
         /// <inhertidoc/>
         public override int GetFixedDataLength(int length) => ((length + 3) / 4 + 1) * 4;
 
@@ -83,9 +73,9 @@ namespace Berrysoft.XXTea
         }
 
         /// <inhertidoc/>
-        protected override void Encrypt(Span<uint> data) => EncryptInternal(data, UInt32Key);
+        protected override void Encrypt(Span<uint> data, ReadOnlySpan<uint> key, int _) => EncryptInternal(data, key);
 
         /// <inhertidoc/>
-        protected override void Decrypt(Span<uint> data) => DecryptInternal(data, UInt32Key);
+        protected override void Decrypt(Span<uint> data, ReadOnlySpan<uint> key, int _) => DecryptInternal(data, key);
     }
 }

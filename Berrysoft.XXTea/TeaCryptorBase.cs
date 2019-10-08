@@ -10,42 +10,12 @@ namespace Berrysoft.XXTea
     public abstract class TeaCryptorBase
     {
         private static readonly uint[] EmptyKey = new uint[4];
+        public const int DefaultRound = 32;
 
         /// <summary>
         /// The magic number delta.
         /// </summary>
         protected const uint Delta = 0x9E3779B9;
-
-        private uint[] uint32Key;
-
-        /// <summary>
-        /// The 128-bit key.
-        /// </summary>
-        public ReadOnlySpan<uint> UInt32Key => uint32Key;
-
-        /// <summary>
-        /// Initializes a new instance of cryptor.
-        /// </summary>
-        protected TeaCryptorBase() : this(Array.Empty<byte>()) { }
-
-        /// <summary>
-        /// Initializes a new instance of cryptor with key.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        protected TeaCryptorBase(ReadOnlySpan<byte> key) => uint32Key = ConsumeKeyInternal(key);
-
-        /// <summary>
-        /// Initializes a new instance of cryptor with key string.
-        /// </summary>
-        /// <param name="key">The UTF-8 key string.</param>
-        protected TeaCryptorBase(string key) : this(key, Encoding.UTF8) { }
-
-        /// <summary>
-        /// Initializes a new instance of cryptor with key string and its encoding.
-        /// </summary>
-        /// <param name="key">The key string.</param>
-        /// <param name="encoding">The specified encoding.</param>
-        protected TeaCryptorBase(string key, Encoding encoding) : this(encoding.GetBytes(key)) { }
 
         private uint[] ConsumeKeyInternal(ReadOnlySpan<byte> key)
         {
@@ -60,25 +30,6 @@ namespace Berrysoft.XXTea
                 return uintKey;
             }
         }
-
-        /// <summary>
-        /// Change the key to another one.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        public void ConsumeKey(ReadOnlySpan<byte> key) => uint32Key = ConsumeKeyInternal(key);
-
-        /// <summary>
-        /// Change the key to another one.
-        /// </summary>
-        /// <param name="key">The UTF-8 key string.</param>
-        public void ConsumeKey(string key) => ConsumeKey(key, Encoding.UTF8);
-
-        /// <summary>
-        /// Change the key to another one.
-        /// </summary>
-        /// <param name="key">The key string.</param>
-        /// <param name="encoding">The specified encoding.</param>
-        public void ConsumeKey(string key, Encoding encoding) => ConsumeKey(encoding.GetBytes(key));
 
         /// <summary>
         /// Get the fixed data length.
@@ -126,22 +77,33 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="data">The fixed data.</param>
         /// <returns>The encrypted data.</returns>
-        protected abstract void Encrypt(Span<uint> data);
+        protected abstract void Encrypt(Span<uint> data, ReadOnlySpan<uint> key, int round);
 
         /// <summary>
         /// Decrypts the data.
         /// </summary>
         /// <param name="data">The encrypted data.</param>
         /// <returns>The fixed data.</returns>
-        protected abstract void Decrypt(Span<uint> data);
+        protected abstract void Decrypt(Span<uint> data, ReadOnlySpan<uint> key, int round);
 
-        private unsafe void EncryptInternal(Span<byte> fixedData, int originalLength)
+        private unsafe void EncryptInternal(Span<byte> fixedData, int originalLength, ReadOnlySpan<byte> key, int round)
         {
             fixed (byte* pfData = fixedData)
             {
                 Span<uint> uintData = new Span<uint>(pfData, fixedData.Length / 4);
                 AddLength(uintData, originalLength);
-                Encrypt(uintData);
+                if (key.Length >= 16)
+                {
+                    fixed (byte* pkey = key)
+                    {
+                        Span<uint> uintKey = new Span<uint>(pkey, 4);
+                        Encrypt(uintData, uintKey, round);
+                    }
+                }
+                else
+                {
+                    Encrypt(uintData, ConsumeKeyInternal(key), round);
+                }
             }
         }
 
@@ -150,13 +112,13 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="fixedData">The fixed data.</param>
         /// <param name="originalLength">The original data length.</param>
-        public void EncryptSpan(Span<byte> fixedData, int originalLength)
+        public void EncryptSpan(Span<byte> fixedData, int originalLength, ReadOnlySpan<byte> key, int round = DefaultRound)
         {
             if (fixedData.Length < GetFixedDataLength(originalLength))
             {
                 throw new ArgumentOutOfRangeException(nameof(fixedData));
             }
-            EncryptInternal(fixedData, originalLength);
+            EncryptInternal(fixedData, originalLength, key, round);
         }
 
         /// <summary>
@@ -164,10 +126,10 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="data">The fixed data.</param>
         /// <returns>The encrypted data.</returns>
-        public unsafe byte[] Encrypt(ReadOnlySpan<byte> data)
+        public byte[] Encrypt(ReadOnlySpan<byte> data, ReadOnlySpan<byte> key, int round = DefaultRound)
         {
             byte[] fixedData = FixData(data);
-            EncryptInternal(fixedData, data.Length);
+            EncryptInternal(fixedData, data.Length, key, round);
             return fixedData;
         }
 
@@ -176,28 +138,49 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="data">The UTF-8 data string.</param>
         /// <returns>The encrypted data.</returns>
-        public byte[] EncryptString(string data) => EncryptString(data, Encoding.UTF8);
+        public byte[] EncryptString(string data, string key, int round = DefaultRound) => EncryptString(data, Encoding.UTF8, key, Encoding.UTF8, round);
 
         /// <summary>
         /// Encrypts the string.
         /// </summary>
         /// <param name="data">The data string.</param>
-        /// <param name="encoding">The specified encoding.</param>
+        /// <param name="dataEncoding">The specified encoding.</param>
         /// <returns>The encrypted data.</returns>
-        public byte[] EncryptString(string data, Encoding encoding)
+        public byte[] EncryptString(string data, Encoding dataEncoding, string key, Encoding keyEncoding, int round = DefaultRound)
         {
-            byte[] fixedData = new byte[GetFixedDataLength(encoding.GetByteCount(data))];
-            int originalLength = encoding.GetBytes(data, 0, data.Length, fixedData, 0);
-            EncryptInternal(fixedData, originalLength);
+            byte[] fixedData = new byte[GetFixedDataLength(dataEncoding.GetByteCount(data))];
+            int originalLength = dataEncoding.GetBytes(data, 0, data.Length, fixedData, 0);
+            byte[] fixedKey;
+            if (key.Length > 0)
+            {
+                fixedKey = new byte[16];
+                keyEncoding.GetBytes(key, 0, Math.Min(16, key.Length), fixedKey, 0);
+            }
+            else
+            {
+                fixedKey = Array.Empty<byte>();
+            }
+            EncryptInternal(fixedData, originalLength, fixedKey, round);
             return fixedData;
         }
 
-        private unsafe int DecryptInternal(Span<byte> fixedData)
+        private unsafe int DecryptInternal(Span<byte> fixedData, ReadOnlySpan<byte> key, int round)
         {
             fixed (byte* pfData = fixedData)
             {
                 Span<uint> uintData = new Span<uint>(pfData, fixedData.Length / 4);
-                Decrypt(uintData);
+                if (key.Length >= 16)
+                {
+                    fixed (byte* pkey = key)
+                    {
+                        Span<uint> uintKey = new Span<uint>(pkey, 4);
+                        Decrypt(uintData, uintKey, round);
+                    }
+                }
+                else
+                {
+                    Decrypt(uintData, ConsumeKeyInternal(key), round);
+                }
                 return GetOriginalDataLength(GetLength(uintData), fixedData.Length);
             }
         }
@@ -207,13 +190,13 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="fixedData">The fixed data.</param>
         /// <returns>The original data length.</returns>
-        public int DecryptSpan(Span<byte> fixedData)
+        public int DecryptSpan(Span<byte> fixedData, ReadOnlySpan<byte> key, int round = DefaultRound)
         {
             if (fixedData.Length % 4 != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(fixedData));
             }
-            return DecryptInternal(fixedData);
+            return DecryptInternal(fixedData, key, round);
         }
 
         /// <summary>
@@ -221,14 +204,14 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="data">The encrypted data.</param>
         /// <returns>The fixed data.</returns>
-        public byte[] Decrypt(ReadOnlySpan<byte> data)
+        public byte[] Decrypt(ReadOnlySpan<byte> data, ReadOnlySpan<byte> key, int round = DefaultRound)
         {
             if (data.Length % 4 != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(data));
             }
             byte[] fixedData = data.ToArray();
-            int originalLength = DecryptInternal(fixedData);
+            int originalLength = DecryptInternal(fixedData, key, round);
             if (originalLength == 0)
             {
                 return Array.Empty<byte>();
@@ -244,7 +227,7 @@ namespace Berrysoft.XXTea
         /// </summary>
         /// <param name="data">The encrypted data.</param>
         /// <returns>The UTF-8 data string.</returns>
-        public string DecryptString(ReadOnlySpan<byte> data) => DecryptString(data, Encoding.UTF8);
+        public string DecryptString(ReadOnlySpan<byte> data, string key, int round = DefaultRound) => DecryptString(data, Encoding.UTF8, key, Encoding.UTF8, round);
 
         /// <summary>
         /// Decrypts the data to string.
@@ -252,14 +235,24 @@ namespace Berrysoft.XXTea
         /// <param name="data">The encrypted data.</param>
         /// <param name="encoding">The specified encoding.</param>
         /// <returns>The data string.</returns>
-        public string DecryptString(ReadOnlySpan<byte> data, Encoding encoding)
+        public string DecryptString(ReadOnlySpan<byte> data, Encoding encoding, string key, Encoding keyEncoding, int round = DefaultRound)
         {
             if (data.Length % 4 != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(data));
             }
             byte[] fixedData = data.ToArray();
-            int originalLength = DecryptInternal(fixedData);
+            byte[] fixedKey;
+            if (key.Length > 0)
+            {
+                fixedKey = new byte[16];
+                keyEncoding.GetBytes(key, 0, Math.Min(16, key.Length), fixedKey, 0);
+            }
+            else
+            {
+                fixedKey = Array.Empty<byte>();
+            }
+            int originalLength = DecryptInternal(fixedData, fixedKey, round);
             if (originalLength == 0)
             {
                 return string.Empty;

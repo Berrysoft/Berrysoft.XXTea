@@ -21,8 +21,8 @@ namespace Berrysoft.XXTea.Test
         [DataRow(Data3, Key3)]
         public void CryptTest(string data, string key)
         {
-            TeaCryptor cryptor = new TeaCryptor(key);
-            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data)));
+            TeaCryptor cryptor = new TeaCryptor();
+            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data, key), key));
         }
 
         [DataTestMethod]
@@ -32,8 +32,8 @@ namespace Berrysoft.XXTea.Test
         [DataRow(Data3, Key3)]
         public void XCryptTest(string data, string key)
         {
-            XTeaCryptor cryptor = new XTeaCryptor(key);
-            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data)));
+            XTeaCryptor cryptor = new XTeaCryptor();
+            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data, key), key));
         }
 
         [DataTestMethod]
@@ -47,8 +47,8 @@ namespace Berrysoft.XXTea.Test
         [DataRow(Data3, Key3, 0)]
         public void XRoundCryptTest(string data, string key, int round)
         {
-            XTeaCryptor cryptor = new XTeaCryptor(key);
-            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data, round), round));
+            XTeaCryptor cryptor = new XTeaCryptor();
+            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data, key, round), key, round));
         }
 
         [DataTestMethod]
@@ -58,8 +58,8 @@ namespace Berrysoft.XXTea.Test
         [DataRow(Data3, Key3)]
         public void XXCryptTest(string data, string key)
         {
-            XXTeaCryptor cryptor = new XXTeaCryptor(key);
-            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data)));
+            XXTeaCryptor cryptor = new XXTeaCryptor();
+            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data, key), key));
         }
     }
 }

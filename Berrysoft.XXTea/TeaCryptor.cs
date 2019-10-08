@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 
 namespace Berrysoft.XXTea
 {
@@ -8,21 +7,10 @@ namespace Berrysoft.XXTea
     /// </summary>
     public sealed class TeaCryptor : TeaCryptorBase
     {
-        private const int Round = 32;
-
-        /// <inhertidoc/>
-        public TeaCryptor() : base() { }
-        /// <inhertidoc/>
-        public TeaCryptor(byte[] key) : base(key) { }
-        /// <inhertidoc/>
-        public TeaCryptor(string key) : base(key) { }
-        /// <inhertidoc/>
-        public TeaCryptor(string key, Encoding encoding) : base(key, encoding) { }
-
-        private static void EncryptInternal(ref uint v0, ref uint v1, ReadOnlySpan<uint> k)
+        private static void EncryptInternal(ref uint v0, ref uint v1, ReadOnlySpan<uint> k, int round)
         {
             uint sum = 0;
-            int n = Round;
+            int n = round;
             unchecked
             {
                 while (n-- > 0)
@@ -34,10 +22,10 @@ namespace Berrysoft.XXTea
             }
         }
 
-        private static void DecryptInternal(ref uint v0, ref uint v1, ReadOnlySpan<uint> k)
+        private static void DecryptInternal(ref uint v0, ref uint v1, ReadOnlySpan<uint> k, int round)
         {
-            uint sum = unchecked(Round * Delta);
-            int n = Round;
+            uint sum = unchecked((uint)(round * Delta));
+            int n = round;
             unchecked
             {
                 while (n-- > 0)
@@ -50,20 +38,20 @@ namespace Berrysoft.XXTea
         }
 
         /// <inhertidoc/>
-        protected override void Encrypt(Span<uint> data)
+        protected override void Encrypt(Span<uint> data, ReadOnlySpan<uint> key, int round)
         {
             for (int i = 0; i < data.Length; i += 2)
             {
-                EncryptInternal(ref data[i], ref data[i + 1], UInt32Key);
+                EncryptInternal(ref data[i], ref data[i + 1], key, round);
             }
         }
 
         /// <inhertidoc/>
-        protected override void Decrypt(Span<uint> data)
+        protected override void Decrypt(Span<uint> data, ReadOnlySpan<uint> key, int round)
         {
             for (int i = 0; i < data.Length; i += 2)
             {
-                DecryptInternal(ref data[i], ref data[i + 1], UInt32Key);
+                DecryptInternal(ref data[i], ref data[i + 1], key, round);
             }
         }
     }
