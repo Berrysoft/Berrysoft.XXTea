@@ -76,5 +76,16 @@ namespace Berrysoft.XXTea.Test
             TeaCryptorBase cryptor = new XXTeaCryptor();
             Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data, key), key));
         }
+
+        [DataTestMethod]
+        [DataRow(Data0, Key0)]
+        [DataRow(Data1, Key1)]
+        [DataRow(Data2, Key2)]
+        [DataRow(Data3, Key3)]
+        public void AuthCryptTest(string data, string key)
+        {
+            TeaCryptorBase cryptor = new AuthTeaCryptor();
+            Assert.AreEqual(data, cryptor.DecryptString(cryptor.EncryptString(data, key), key));
+        }
     }
 }

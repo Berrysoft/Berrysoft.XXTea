@@ -5,13 +5,13 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>3.0.7.0</AssemblyVersion>
-    <FileVersion>3.0.7.0</FileVersion>
+    <AssemblyVersion>4.0.8.0</AssemblyVersion>
+    <FileVersion>4.0.8.0</FileVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>3.0.7</Version>
+    <Version>4.0.8</Version>
     <Authors>Berrysoft</Authors>
     <Copyright>Copyright (c) 2019 Berrysoft</Copyright>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
