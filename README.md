@@ -32,6 +32,7 @@ Intel Core i5-7200U CPU 2.50GHz (Kaby Lake), 1 CPU, 4 logical and 2 physical cor
 |![Encrypt](Assets/EncryptTime.png)|![Decrypt](Assets/DecryptTime.png)|
 |:-:|:-:|
 |Encrypt Time|Decrypt Time|
+
 Berrysoft.XXTea is slightly slower than Gibbed.XXTEA, mostly because of virtual function calls.
 
 ## Allocation
